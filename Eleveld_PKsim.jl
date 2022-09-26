@@ -31,9 +31,24 @@ study_df, first, _ = getstudydata(studynbr)
 y = zeros(Float32, length(youts)) # create empty output vector
 PKsim!(y, θ, infusionrate, bolusdose, h, youts)
 
-
 # Benchmark one patient
 @btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # 2.6 us, 0 allocations
+
+
+## Simulate all patients
+nstudy = 30 # nbr of studies
+for studynbr = 1:nstudy
+    study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+    for id = firstid:lastid
+        if id in [893, 897] # no measurements exists for these patients
+            continue
+        end
+        θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
+        y = zeros(Float32, length(youts)) # create empty output vector
+        PKsim!(y, θ, infusionrate, bolusdose, h, youts)
+    end
+end
+
 
 ## Benchmarking for fast simulation
 # Simulation times of each patient are added together
@@ -41,7 +56,6 @@ PKsim!(y, θ, infusionrate, bolusdose, h, youts)
 nstudy = 30 # nbr of studies
 benchtime = 0.0 # ns
 for studynbr = 1:nstudy
-    studynbr = 1
     @show studynbr
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
@@ -50,7 +64,7 @@ for studynbr = 1:nstudy
             continue
         end
         θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
-        bm = @benchmark PKsim!($y,$θ, $infusionrate, $bolusdose, $h, $youts) # add samples = 100 (or similar?)
+        bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # add samples = 100 (or similar?)
         benchtime += median(bm.times) # median simulation time
     end
 end

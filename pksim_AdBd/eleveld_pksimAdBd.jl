@@ -67,6 +67,18 @@ y = simulate(θ, infusionrate, bolusdose, h, youts)
 # Benchmark one patient
 @btime simulate($θ, $infusionrate, $bolusdose, $h, $youts) # 618 us, 3713 allocations
 
+## Simulate all patients
+nstudy = 30 # nbr of studies
+for studynbr = 1:nstudy
+    study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+    for id = firstid:lastid
+        if id in [893, 897] # no measurements exists for these patients
+            continue
+        end
+        θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
+        simulate(θ, infusionrate, bolusdose, h, youts)
+    end
+end
 
 ## Benchmarking simulation
 # Simulation times of each patient are added together
@@ -74,7 +86,6 @@ nstudy = 30 # nbr of studies
 benchtime = 0.0 # ns
 nallocs = 0
 for studynbr = 1:nstudy
-    studynbr = 1
     @show studynbr
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
