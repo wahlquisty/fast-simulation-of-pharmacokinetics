@@ -29,7 +29,7 @@ end
 end
 
 # Initiate/update state
-@inline @fastmath function updatestate(x, h, λ, u=0.0, v=0.0)
+@inline function updatestate(x::AbstractVector{T}, h, λ, u=zero(T), v=zero(T)) where T
     Φdiag = getΦdiag(λ, h) # compute Φ
     x = bolus(x, v) # update state for bolus
     x = step(x, λ, Φdiag, u) # infusion affect next sample
@@ -37,7 +37,7 @@ end
 end
 
 # Update state and compute output
-@inline @fastmath function updatestateoutput(x, h, V1, λ, R, u=0.0, v=0.0)
+@inline function updatestateoutput(x::AbstractVector{T}, h, V1, λ, R, u=zero(T), v=zero(T)) where T
     Φdiag = getΦdiag(λ, h) # compute Φ
     x = bolus(x, v) # update state for bolus
     y = gety(x, V1, R) # compute output
@@ -49,7 +49,7 @@ end
 function PKsim!(y, θ, u, v, hs, youts)
     λ, R = update(θ) # Setting up simulator
     j = 1 # counter to keep track of next free spot in y
-    x = @SVector [0.0f0, 0.0f0, 0.0f0] # initial state
+    x = @SVector zeros(eltype(u), 3) # initial state
     for i in eachindex(u)
         if i in youts # if we want to compute output
             x, yi = updatestateoutput(x, hs[i], θ[6], λ, R, u[i], v[i]) # update state and compute output
