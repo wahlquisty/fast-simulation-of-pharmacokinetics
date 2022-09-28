@@ -8,6 +8,7 @@
 # TODO: run full benchmark with julia 1.8
 
 using Pkg
+cd(@__DIR__)
 Pkg.activate(".")
 
 using CSV, DataFrames, StaticArrays
