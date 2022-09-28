@@ -57,6 +57,7 @@ end
 nstudy = 30 # nbr of studies
 benchtime = 0.0 # ns
 for studynbr = 1:nstudy
+    global benchtime
     @show studynbr
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
