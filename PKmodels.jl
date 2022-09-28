@@ -14,7 +14,7 @@ function update(θ)
 end
 
 # Compute eigenvalues λ for 3 compartment mammillary model
-@inline @fastmath function getλ(θ)
+@inline @fastmath function getλ(θ::AbstractVector{T}) where T
     k10, k12, k13, k21, k31, _ = θ
     b1 = k10 + k12 + k13 + k21 + k31
     b2 = k21 * (k10 + k13 + k31) + k31 * (k10 + k12)
@@ -27,10 +27,10 @@ end
     a4 = b2 / 3
     a5 = a4 - a2
     a6 = (b1 * a4 - b3) / 2
-    a7 = 2(a6 + sqrt(complex(a5^3 + (a3 - a6)^2)) - a3)^(1 / 3.0f0)
+    a7 = 2(a6 + sqrt(complex(a5^3 + (a3 - a6)^2)) - a3)^(1 / T(3))
     a8 = -real(a7)
     a9 = imag(a7)
-    a10 = a9 * sqrt(3) / 2
+    a10 = a9 * sqrt(T(3)) / 2
     a11 = a1 - a8 / 2
 
     return @SVector [-a1 - a8, -a10 - a11, a10 - a11] # The eigenvalues of the continuous-time system matrix

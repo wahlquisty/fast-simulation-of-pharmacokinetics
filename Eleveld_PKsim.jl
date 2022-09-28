@@ -8,6 +8,7 @@
 # TODO: run full benchmark with julia 1.8
 
 using Pkg
+cd(@__DIR__)
 Pkg.activate(".")
 
 using CSV, DataFrames, StaticArrays
@@ -32,7 +33,7 @@ y = zeros(Float32, length(youts)) # create empty output vector
 PKsim!(y, θ, infusionrate, bolusdose, h, youts)
 
 # Benchmark one patient
-@btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # 2.6 us, 0 allocations
+@btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $(Set(youts))) # 2.6 us, 0 allocations
 
 
 ## Simulate all patients
