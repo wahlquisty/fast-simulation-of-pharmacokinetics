@@ -8,6 +8,7 @@
 # TODO: run full benchmark with julia 1.8
 
 using Pkg
+cd(@__DIR__)
 Pkg.activate(".")
 
 using CSV, DataFrames, StaticArrays
@@ -32,7 +33,7 @@ y = zeros(Float32, length(youts)) # create empty output vector
 PKsim!(y, θ, infusionrate, bolusdose, h, youts)
 
 # Benchmark one patient
-@btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # 2.6 us, 0 allocations
+@btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $(Set(youts))) # 2.6 us, 0 allocations
 
 
 ## Simulate all patients
@@ -56,6 +57,7 @@ end
 nstudy = 30 # nbr of studies
 benchtime = 0.0 # ns
 for studynbr = 1:nstudy
+    global benchtime
     @show studynbr
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
@@ -64,7 +66,8 @@ for studynbr = 1:nstudy
             continue
         end
         θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
-        bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # add samples = 100 (or similar?)
+        yset = Set(youts) 
+        bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) # add samples = 100 (or similar?)
         benchtime += median(bm.times) # median simulation time
     end
 end
