@@ -40,7 +40,7 @@ nstudy = 30 # nbr of studies
 for studynbr = 1:nstudy
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
-        if id in [893, 897] # no measurements exists for these patients
+        if id in (893, 897) # no measurements exists for these patients
             continue
         end
         θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
@@ -53,20 +53,29 @@ end
 ## Benchmarking for fast simulation
 # Simulation times of each patient are added together
 # Total number of allocations: 0.
-nstudy = 30 # nbr of studies
-benchtime = 0.0 # ns
-for studynbr = 1:nstudy
-    @show studynbr
-    study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
-    for id = firstid:lastid
-        @show id
-        if id in [893, 897] # no measurements exists for these patients
-            continue
+function runsim()
+    nstudy = 30 # nbr of studies
+    benchtime = 0.0 # ns
+    for studynbr = 1:nstudy
+        # @show studynbr
+        study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+        for id = firstid:lastid
+            # @show id
+            if id in (893, 897) # no measurements exists for these patients
+                continue
+            end
+            θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
+            yset = Set(youts) 
+            y = zeros(Float32, length(youts)) # create empty output vector
+            # bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples=5 evals=5
+            # benchtime += median(bm.times) # median simulation time
+            bm = @elapsed PKsim!(y, θ, infusionrate, bolusdose, h, yset)
+            benchtime += bm# median simulation time
         end
-        θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
-        bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $youts) # add samples = 100 (or similar?)
-        benchtime += median(bm.times) # median simulation time
     end
+    benchtime
 end
 
-benchtime # 2.14804786e6 nanoseconds = 2.148 ms (for julia 1.7)
+benchtime = runsim() # 2.14804786e6 nanoseconds = 2.148 ms (for julia 1.7)
+
+
