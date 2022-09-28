@@ -60,17 +60,17 @@ function runsim()
         # @show studynbr
         study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
         for id = firstid:lastid
-            # @show id
+            @show id
             if id in (893, 897) # no measurements exists for these patients
                 continue
             end
             θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
             yset = Set(youts) 
             y = zeros(Float32, length(youts)) # create empty output vector
-            # bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples=5 evals=5
-            # benchtime += median(bm.times) # median simulation time
-            bm = @elapsed PKsim!(y, θ, infusionrate, bolusdose, h, yset)
-            benchtime += bm# median simulation time
+            bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples=5 evals=5 gctrial=false
+            benchtime += median(bm.times) # median simulation time
+            # bm = @elapsed PKsim!(y, θ, infusionrate, bolusdose, h, yset)
+            # benchtime += bm# median simulation time
         end
     end
     benchtime
