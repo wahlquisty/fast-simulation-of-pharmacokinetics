@@ -50,13 +50,13 @@ function PKsim!(y, θ, u, v, hs, youts)
     λ, R = update(θ) # Setting up simulator
     j = 1 # counter to keep track of next free spot in y
     x = @SVector zeros(eltype(u), 3) # initial state
-    for i in eachindex(u)
+    for i in eachindex(u, hs, v)
         if i in youts # if we want to compute output
-            x, yi = updatestateoutput(x, hs[i], θ[6], λ, R, u[i], v[i]) # update state and compute output
+            x, yi = @inbounds updatestateoutput(x, hs[i], θ[6], λ, R, u[i], v[i]) # update state and compute output
             y[j] = yi
             j += 1
         else
-            x = updatestate(x, hs[i], λ, u[i], v[i]) # update state
+            x = @inbounds updatestate(x, hs[i], λ, u[i], v[i]) # update state
         end
     end
     return y
