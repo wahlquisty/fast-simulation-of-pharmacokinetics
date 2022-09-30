@@ -44,7 +44,24 @@ end
     return x, y
 end
 
-# Fast PK simulation for 3 compartment model. Modifies first argument, output y (prealloated)
+"""
+    pksim!(y, θ, u, v, hs, youts)
+Fast simulation of the three compartment mammillary PK model.
+
+The parameter vector θ has the following structure
+```
+θ = [k10, k12, k13, k21, k31, V1]
+```
+# Arguments:
+- `y`: Preallocated output vector of size length(youts)
+- `θ`: Parameter vector, see above.
+- `u`: Infusion rate vector of size length(hs)
+- `v`: Bolus dose vector of size length(hs)
+- `hs`: Step size, should have the size of [diff(time) diff(time)[end]] where time is the matching time vector to u, v
+- `youts`: Indices for output observations, corresponding to times in hs
+
+Updates `y` with simulated outputs `x_1` at time instances `youts`.
+"""
 function PKsim!(y, θ, u, v, hs, youts)
     λ, λinv, R = update(θ) # Setting up simulator
     j = 1 # counter to keep track of next free spot in y
