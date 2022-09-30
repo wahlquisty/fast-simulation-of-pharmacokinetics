@@ -2,7 +2,6 @@
 # Computes eigenvalues and R column vector of the three compartment mammillary model.
 
 using StaticArrays, LinearAlgebra
-# This file is for now just test case for mammillary three-compartment model
 
 # Initiate/update parameters
 function update(θ)
