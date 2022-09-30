@@ -65,7 +65,7 @@ function runsim()
             θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
             yset = Set(youts)
             y = zeros(Float32, length(youts)) # create empty output vector
-            bm = @benchmark PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 5 evals = 5 gctrial = false
+            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 5 evals = 5 gctrial = false
             benchtime += median(bm.times) # median simulation time
             # bm = @elapsed PKsim!(y, θ, infusionrate, bolusdose, h, yset)
             # benchtime += bm# median simulation time
