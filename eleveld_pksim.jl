@@ -2,8 +2,6 @@
 
 # Simulates the three-compartment mammillary model. Does not compute all states, only first state as output (simpler R). Simulates blood plasma concentration of the central compartment.
 
-# TODO: run full benchmark with julia 1.8
-
 using Pkg
 cd(@__DIR__)
 Pkg.activate(".")
@@ -43,7 +41,7 @@ for studynbr = 1:nstudy
         end
         θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
         y = zeros(Float32, length(youts)) # create empty output vector
-        PKsim!(y, θ, infusionrate, bolusdose, h, youts)
+        pksim!(y, θ, infusionrate, bolusdose, h, youts)
     end
 end
 
@@ -58,22 +56,20 @@ function runsim()
         # @show studynbr
         study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
         for id = firstid:lastid
-            @show id
+            # @show id
             if id in (893, 897) # no measurements exists for these patients
                 continue
             end
             θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
             yset = Set(youts)
             y = zeros(Float32, length(youts)) # create empty output vector
-            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 5 evals = 5 gctrial = false
+            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 10 evals = 10 gctrial = false
             benchtime += median(bm.times) # median simulation time
-            # bm = @elapsed PKsim!(y, θ, infusionrate, bolusdose, h, yset)
-            # benchtime += bm# median simulation time
         end
     end
     benchtime
 end
 
-benchtime = runsim() # 1.608e6 nanoseconds = 1.608 ms (for julia 1.8)
+benchtime = runsim() # 1.6304 e6 nanoseconds = 1.630 ms (for julia 1.8)
 
 

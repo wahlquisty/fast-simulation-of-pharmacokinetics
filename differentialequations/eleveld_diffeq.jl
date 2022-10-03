@@ -6,12 +6,12 @@
 using Pkg
 Pkg.activate("..")
 
-using ControlSystems, CSV, DataFrames, LinearAlgebra
+using ControlSystemsBase, CSV, DataFrames, LinearAlgebra
 using BenchmarkTools
 using DifferentialEquations
 
-include("../PKsimulation.jl") # fcts to simulate state and compute output
-include("../PKmodels.jl") # calculations of λ, R from parameter vector θ
+include("../pksimulation.jl") # fcts to simulate state and compute output
+include("../pkmodels.jl") # calculations of λ, R from parameter vector θ
 
 # Load datafiles
 modeldf = CSV.read("../inputs/eleveld_modelparams.csv", DataFrame) # Model parameters V1,V2,... for PK model

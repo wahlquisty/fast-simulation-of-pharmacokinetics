@@ -3,8 +3,8 @@
 
 using BenchmarkTools, ControlSystems, ForwardDiff
 
-include("../PKsimulation.jl") # fcts to simulate state and compute output
-include("../PKmodels.jl") # calculations of λ, R from parameter vector θ
+include("../pksimulation.jl") # fcts to simulate state and compute output
+include("../pkmodels.jl") # calculations of λ, R from parameter vector θ
 include("../expm.jl")
 # Since we cannot differentiate through VectorizationBase.vexp, we cannot use SLEEFPirates.exp. Instead, use expm.julia. Adds approximately 1 us in time per patient.
 # Diagonal of discrete time system matrix

@@ -3,12 +3,10 @@
 # x(k+1) = A_d*x(k) + B_d u(k), y(k) = C*x(k).
 # Date: 220926
 
-# TODO: run full benchmark with julia 1.8
-
 using Pkg
 Pkg.activate("..")
 
-using ControlSystems, CSV, DataFrames, StaticArrays
+using ControlSystemsBase, CSV, DataFrames, StaticArrays
 using BenchmarkTools
 
 include("../expm.jl") # Exponential matrix computation 
@@ -56,16 +54,16 @@ function simulate(θ, u, v, h, youts)
 end
 
 
-# Simulating one patient
-studynbr = 29
-id = 842 # long time series
-study_df, first, _ = getstudydata(studynbr)
-θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df)
-y = simulate(θ, infusionrate, bolusdose, h, youts)
+# # Simulating one patient
+# studynbr = 29
+# id = 842 # long time series
+# study_df, first, _ = getstudydata(studynbr)
+# θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df)
+# y = simulate(θ, infusionrate, bolusdose, h, youts)
 
 
-# Benchmark one patient
-@btime simulate($θ, $infusionrate, $bolusdose, $h, $youts) # 618 us, 3713 allocations
+# # Benchmark one patient
+# @btime simulate($θ, $infusionrate, $bolusdose, $h, $youts) # 618 us, 3713 allocations
 
 ## Simulate all patients
 nstudy = 30 # nbr of studies
@@ -82,23 +80,26 @@ end
 
 ## Benchmarking simulation
 # Simulation times of each patient are added together
-nstudy = 30 # nbr of studies
-benchtime = 0.0 # ns
-nallocs = 0
-for studynbr = 1:nstudy
-    @show studynbr
-    study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
-    for id = firstid:lastid
-        @show id
-        if id in [893, 897] # no measurements exists for these patients
-            continue
+function runsim()
+    nstudy = 30 # nbr of studies
+    benchtime = 0.0 # ns
+    nallocs = 0
+    for studynbr = 1:nstudy
+        # @show studynbr
+        study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+        for id = firstid:lastid
+            # @show id
+            if id in [893, 897] # no measurements exists for these patients
+                continue
+            end
+            θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
+            bm = @benchmark simulate($θ, $infusionrate, $bolusdose, $h, $youts) samples = 10 evals = 10 gctrial = false
+            benchtime += median(bm.times) # median simulation time
+            nallocs += bm.allocs
         end
-        θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
-        bm = @benchmark simulate($θ, $infusionrate, $bolusdose, $h, $youts) # add samples = 100 (or similar?)
-        benchtime += median(bm.times) # median simulation time
-        nallocs += bm.allocs
     end
+    benchtime, nallocs
 end
 
-benchtime # 5.481491855e8 ns = 548 ns (julia 1.7)
-nallocs # 2.027384e6
+benchtime, nallocs = runsim()
+# 6.5308e8 ns = 653 ms, 2027384 allocations

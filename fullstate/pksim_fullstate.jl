@@ -9,8 +9,8 @@ Pkg.activate("..")
 using ControlSystems, StaticArrays, LinearAlgebra
 using BenchmarkTools
 
-include("PKsimulation_fullstate.jl") # fcts to simulate state and compute output
-include("PKmodels_fullstate.jl") # calculations of λ, R from parameter vector θ
+include("pksimulation_fullstate.jl") # fcts to simulate state and compute output
+include("pkmodels_fullstate.jl") # calculations of λ, R from parameter vector θ
 
 # Example
 θ = rand(Float32, 6); # model parameters, k10, k12, k13, k21, k31, V1
