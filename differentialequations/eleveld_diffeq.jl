@@ -120,3 +120,52 @@ ydiffeq = sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, t
 # Output does not match result from eleveld_pksim.jl at all time instances! why?
 
 # @btime sim_diffeq($θ, $copy(infusionrate), $copy(bolusdose), $time, $youtstime, $tspan)
+
+
+## Simulate all patients
+nstudy = 30 # nbr of studies
+for studynbr = 1:nstudy
+    study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+    for id = firstid:lastid
+        if id in [893, 897] # no measurements exists for these patients
+            continue
+        end
+        θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
+        sim_diffeq(θ, infusionrate, bolusdose, time, youtstime, tspan)
+    end
+end
+
+## Benchmarking simulation
+# Simulation times of each patient are added together
+function runsim()
+    nstudy = 30 # nbr of studies
+    benchtime = 0.0 # ns
+    nallocs = 0
+    for studynbr = 1:nstudy
+        # @show studynbr
+        study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
+        for id = firstid:lastid
+            @show id
+            if id in [893, 897] # no measurements exists for these patients
+                continue
+            end
+            θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
+            # bm = @benchmark sim_diffeq($θ, $deepcopy(infusionrate), $deepcopy(bolusdose), $time, $youtstime, $tspan) samples = 10 evals = 10 gctrial = false # does not work, why?
+            nit = 10 # nbr of iterations per patient
+            bit = zeros(nit)
+            for it = 1:nit # nbr of trials
+                bit[it] = @elapsed sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
+            end
+            benchtime += median(bit)
+            nallocs += @allocated sim_diffeq(θ, infusionrate, bolusdose, time, youtstime, tspan)
+            # θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
+            # bm = @benchmark simulate($θ, $infusionrate, $bolusdose, $h, $youts) 
+            # benchtime += median(bm.times) # median simulation time
+            # nallocs += bm.allocs
+        end
+    end
+    benchtime, nallocs
+end
+
+benchtime, nallocs = runsim()
+# 0.23 s = 230.3 ms, 27869280 allocations
