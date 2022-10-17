@@ -9,9 +9,7 @@ Pkg.activate("..")
 using ControlSystemsBase, CSV, DataFrames, LinearAlgebra
 using BenchmarkTools
 using DifferentialEquations
-
-include("../pksimulation.jl") # fcts to simulate state and compute output
-include("../pkmodels.jl") # calculations of λ, R from parameter vector θ
+using StaticArrays
 
 # Load datafiles
 modeldf = CSV.read("../inputs/eleveld_modelparams.csv", DataFrame) # Model parameters V1,V2,... for PK model
@@ -111,11 +109,11 @@ end
 
 
 # Simulate one patient
-studynbr = 29
-id = 842 # long time series
-study_df, first, _ = getstudydata(studynbr)
-θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
-ydiffeq = sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
+# studynbr = 29
+# id = 842 # long time series
+# study_df, first, _ = getstudydata(studynbr)
+# θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
+# ydiffeq = sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
 
 # Output does not match result from eleveld_pksim.jl at all time instances! why?
 

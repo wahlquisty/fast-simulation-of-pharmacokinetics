@@ -5,14 +5,13 @@
 using Pkg
 cd(@__DIR__)
 Pkg.activate(".")
+Pkg.add(url="https://github.com/wahlquisty/FastPKSim.jl")
 
+using FastPKSim
 using CSV, DataFrames, StaticArrays
 using BenchmarkTools
 
-include("pksimulation.jl") # functions to simulate state and compute output
-include("pkmodels.jl") # calculations of λ, R from parameter vector θ
-
-# Load datafiles
+# # Load datafiles
 modeldf = CSV.read("inputs/eleveld_modelparams.csv", DataFrame) # Model parameters V1,V2,... for PK model
 inputdf = CSV.read("inputs/eleveld_infusiondata.csv", DataFrame) # Input vector for simulation, with time and rates/ doses for infusions and boluses
 idxdf = CSV.read("inputs/eleveld_youts.csv", DataFrame) # Indices of time points for final concentration vector with time points (relates to indices in eleveld_infusiondata.csv)
@@ -29,7 +28,6 @@ include("getdata.jl") # Functions to get input data from files (model parameters
 
 # # Benchmark one patient
 # @btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $(Set(youts))) # 2.6 us, 0 allocations
-
 
 ## Simulate all patients
 nstudy = 30 # nbr of studies
@@ -63,7 +61,7 @@ function runsim()
             θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
             yset = Set(youts)
             y = zeros(Float32, length(youts)) # create empty output vector
-            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 10 evals = 10 gctrial = false
+            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset, order = 3) samples = 10 evals = 10 gctrial = false
             benchtime += median(bm.times) # median simulation time
         end
     end

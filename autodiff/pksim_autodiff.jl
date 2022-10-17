@@ -1,10 +1,10 @@
-# ForwardDiff with closure for new and old simulation.
-# Date: 220705
+# ForwardDiff with closure for fast PK simulation as well as update using x(k+1) = Ad*xk + Bd*uk
+# Date: 221017
 
-using BenchmarkTools, ControlSystems, ForwardDiff
+using BenchmarkTools, ControlSystemsBase, ForwardDiff
 
-include("../pksimulation.jl") # fcts to simulate state and compute output
-include("../pkmodels.jl") # calculations of λ, R from parameter vector θ
+include("simulation.jl") # fcts to simulate state and compute output
+include("pkmodels.jl") # calculations of λ, R from parameter vector θ
 include("../expm.jl")
 # Since we cannot differentiate through VectorizationBase.vexp, we cannot use SLEEFPirates.exp. Instead, use expm.julia. Adds approximately 1 us in time per patient.
 # Diagonal of discrete time system matrix
@@ -13,19 +13,19 @@ include("../expm.jl")
 end
 
 # Simulate with closure
-function simulate(θ, infusionrate, bolusdose, h, youts)
+function simulate(θ, infusionrate, bolusdose, h, youts, order)
     function simulate_inner(θ::Array{T}) where {T<:Real}
-        λ, R = update(θ) # Setting up simulator
-        y = zeros(T, length(youts))
-        j = 1 # counter to keep track of next free spot in Cp
-        x = @SVector [0.0f0, 0.0f0, 0.0f0] # initial state
-        for i in eachindex(u)
+        model = PK(θ, order)
+        j = 1 # counter to keep track of next free spot in y
+        x = @SVector zeros(eltype(u), 3) # initial state
+        y = zeros(T,length(youts))
+        for i in eachindex(u, hs, v)
             if i in youts # if we want to compute output
-                x, yi = updatestateoutput(x, hs[i], θ[6], λ, R, u[i], v[i]) # update state and compute output
+                x, yi = @inbounds updatestateoutput(x, hs[i], model.V1inv, model.λ, model.λinv, model.R, u[i], v[i]) # update state and compute output
                 y[j] = yi
                 j += 1
             else
-                x = updatestate(x, hs[i], λ, u[i], v[i]) # update state
+                x = @inbounds updatestate(x, hs[i], model.λ, model.λinv, u[i], v[i]) # update state
             end
         end
         return y
@@ -79,7 +79,7 @@ youts = unique(sort(Int32.(floor.(rand(10,) * 10) .+ 1))) # observation indices
 
 
 # jacobian for new simulation
-simulate_inner = simulate(θ, u, v, hs, youts)
+simulate_inner = simulate(θ, u, v, hs, youts,3)
 simulate_inner(θ)
 ForwardDiff.jacobian(simulate_inner, θ) # works! (without SLEEFPirates)
 
@@ -89,6 +89,6 @@ simAdBd_inner(θ)
 ForwardDiff.jacobian(simAdBd_inner, θ) # works!
 
 # btiming
-@btime ForwardDiff.jacobian(simulate_inner, $θ) # 536 allocations, 21 us
-@btime ForwardDiff.jacobian(simAdBd_inner, $θ) # 5800 allocations, 1.2 ms
+@btime ForwardDiff.jacobian(simulate_inner, $θ) # 757 allocations, 30 us
+@btime ForwardDiff.jacobian(simAdBd_inner, $θ) # 6400 allocations, 1.2 ms
 # comparison: old simulation is x slower, x more allocations

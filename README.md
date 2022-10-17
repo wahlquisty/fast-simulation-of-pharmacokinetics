@@ -1,4 +1,4 @@
 # pksim
-Fast simulation of PK models
 
-Fast simulation of the Eleveld propofol model set in Eleveld_PKsim.jl of the three-compartment mammillary model.
+Fast simulation of the Eleveld propofol model set (1033 patient) in eleveld_pksim.jl of the three-compartment mammillary model.
+Uses the Julia package "FastPKSim.jl" for fast simulations of PK compartment models.

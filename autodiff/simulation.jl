@@ -16,8 +16,8 @@ end
 end
 
 # output computation
-function gety(x, V1, R)
-    return (1/V1*R'*x)[1]
+function gety(x, V1inv, R)
+    return (V1inv*R'*x)[1]
 end
 
 # Diagonal of discrete time system matrix
@@ -59,20 +59,21 @@ The parameter vector θ has the following structure
 - `v`: Bolus dose vector of size length(hs)
 - `hs`: Step size, should have the size of [diff(time) diff(time)[end]] where time is the matching time vector to u, v
 - `youts`: Indices for output observations, corresponding to times in hs
+- `order`: Model order. If argument is left out, order = 3
 
 Updates `y` with simulated outputs `x_1` at time instances `youts`.
 """
-function pksim!(y, θ, u, v, hs, youts)
-    λ, λinv, R = update(θ) # Setting up simulator
+function pksim!(y, θ, u, v, hs, youts; order = 3)
+    model = PK(θ, order)
     j = 1 # counter to keep track of next free spot in y
     x = @SVector zeros(eltype(u), 3) # initial state
     for i in eachindex(u, hs, v)
         if i in youts # if we want to compute output
-            x, yi = @inbounds updatestateoutput(x, hs[i], θ[6], λ, λinv, R, u[i], v[i]) # update state and compute output
+            x, yi = @inbounds updatestateoutput(x, hs[i], model.V1inv, model.λ, model.λinv, model.R, u[i], v[i]) # update state and compute output
             y[j] = yi
             j += 1
         else
-            x = @inbounds updatestate(x, hs[i], λ, λinv, u[i], v[i]) # update state
+            x = @inbounds updatestate(x, hs[i], model.λ, model.λinv, u[i], v[i]) # update state
         end
     end
     return y
