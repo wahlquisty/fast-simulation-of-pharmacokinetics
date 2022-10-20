@@ -1,24 +1,26 @@
-# First attempt of simulating the Eleveld model using DifferentialEquations.jl
+# Simulating the Eleveld model using DifferentialEquations.jl
 # Use callbacks for change of infusion rates and bolus doses
-
-# FIXME: Does not generate correct output! Compare with output from eleveld_pksim.jl! For the example patient, only the first samples are correct.
 
 using Pkg
 Pkg.activate("..")
 
-using ControlSystemsBase, CSV, DataFrames, LinearAlgebra
+using CSV, DataFrames, DifferentialEquations, LinearAlgebra, StaticArrays
 using BenchmarkTools
-using DifferentialEquations
-using StaticArrays
 
 # Load datafiles
 modeldf = CSV.read("../inputs/eleveld_modelparams.csv", DataFrame) # Model parameters V1,V2,... for PK model
 inputdf = CSV.read("../inputs/eleveld_infusiondata.csv", DataFrame) # Input vector for simulation, with time and amounts for infusions and boluses
 idxdf = CSV.read("../inputs/eleveld_youts.csv", DataFrame) # Indices of time points for final concentration vector with time points (relates to inputdf)
 
-include("../getdata.jl") # Functions to get input data from files (model parameters and input data)
+# Modified functions from eleveld_pksim.jl
+function getstudydata(studynbr)
+    study_df = modeldf[in([studynbr]).(modeldf.StudyNbr), :] # get all rows with nbr = studynbr
+    idnbrs = study_df[!, :ID] # get array with all id-numbers in current study
+    last = idnbrs[length(idnbrs)] # last id-number of current study
+    first = idnbrs[1] # first id-number of current study
+    return study_df, first, last
+end
 
-# In this case, we are not interested in the indicies of the measured outputs, but rather the specific time points. Therefore, this function is modified
 function getpatientdata(id, study_df)
     subject = study_df[in([id]).(study_df.ID), :] # get all rows with nbr = id
 
@@ -54,7 +56,6 @@ function getpatientdata(id, study_df)
     youts = Int32.(youtstime[!, :Idx])
     #time = time[youts]
 
-    θdiffeq = θ[1:6]
     tol = 1e-6
     tspan = [time[1], time[end] + tol]
     youtstime = time[youts] .+ tol
@@ -90,7 +91,6 @@ function sim_diffeq(θ, uinf, ubol, utime, youtstime, tspan)
     p = [θ; w]
     prob = ODEProblem(pk3!, x0, tspan, p)
 
-    # do these need to be inside function?
     affectbolus!(integrator) = integrator.u[1] += popfirst!(ubol) / θ[6] # can probably do this in a better way
     cbbolus = PresetTimeCallback(utime[ibolstart:end-1], affectbolus!, save_positions=(false, false))
 
@@ -101,23 +101,9 @@ function sim_diffeq(θ, uinf, ubol, utime, youtstime, tspan)
 
     # Solve
     sol = solve(prob, callback=cbs, saveat=youtstime)
-    # sol = solve(prob, callback=cbbolus, saveat=0.01)
-    # return sol
     y = reduce(hcat, sol.u)[1, :]
     return y
 end
-
-
-# Simulate one patient
-# studynbr = 29
-# id = 842 # long time series
-# study_df, first, _ = getstudydata(studynbr)
-# θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
-# ydiffeq = sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
-
-# Output does not match result from eleveld_pksim.jl at all time instances! why?
-
-# @btime sim_diffeq($θ, $copy(infusionrate), $copy(bolusdose), $time, $youtstime, $tspan)
 
 
 ## Simulate all patients
@@ -147,23 +133,18 @@ function runsim()
             if id in [893, 897] # no measurements exists for these patients
                 continue
             end
-            θ, infusionrate, bolusdose, time, h, youts, youtstime, tspan = getpatientdata(id, study_df)
-            # bm = @benchmark sim_diffeq($θ, $deepcopy(infusionrate), $deepcopy(bolusdose), $time, $youtstime, $tspan) samples = 10 evals = 10 gctrial = false # does not work, why?
-            nit = 10 # nbr of iterations per patient
-            bit = zeros(nit)
-            for it = 1:nit # nbr of trials
-                bit[it] = @elapsed sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
+            θ, infusionrate, bolusdose, time, _, _, youtstime, tspan = getpatientdata(id, study_df)
+            ni = 10 # nbr of iterations per patient
+            ti = zeros(ni)
+            for it = 1:ni # nbr of trials
+                ti[it] = @elapsed sim_diffeq(θ, copy(infusionrate), copy(bolusdose), time, youtstime, tspan)
             end
-            benchtime += median(bit)
+            benchtime += median(ti)
             nallocs += @allocated sim_diffeq(θ, infusionrate, bolusdose, time, youtstime, tspan)
-            # θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
-            # bm = @benchmark simulate($θ, $infusionrate, $bolusdose, $h, $youts) 
-            # benchtime += median(bm.times) # median simulation time
-            # nallocs += bm.allocs
         end
     end
     benchtime, nallocs
 end
 
 benchtime, nallocs = runsim()
-# 0.23 s = 230.3 ms, 27869280 allocations
+# 0.2304 s = 230.4 ms, 27869280 allocations
