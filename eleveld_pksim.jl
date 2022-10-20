@@ -5,7 +5,7 @@
 using Pkg
 cd(@__DIR__)
 Pkg.activate(".")
-Pkg.add(url="https://github.com/wahlquisty/FastPKSim.jl")
+Pkg.add(url="https://github.com/wahlquisty/FastPKSim.jl") # FastPKSim.jl from github
 
 using FastPKSim
 using CSV, DataFrames, StaticArrays
@@ -18,17 +18,6 @@ idxdf = CSV.read("inputs/eleveld_youts.csv", DataFrame) # Indices of time points
 
 include("getdata.jl") # Functions to get input data from files (model parameters and input data)
 
-# # Simulate one patient
-# studynbr = 29
-# id = 842 # long time series
-# study_df, first, _ = getstudydata(studynbr)
-# θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df)
-# y = zeros(Float32, length(youts)) # create empty output vector
-# PKsim!(y, θ, infusionrate, bolusdose, h, youts)
-
-# # Benchmark one patient
-# @btime PKsim!($y, $θ, $infusionrate, $bolusdose, $h, $(Set(youts))) # 2.6 us, 0 allocations
-
 ## Simulate all patients
 nstudy = 30 # nbr of studies
 for studynbr = 1:nstudy
@@ -39,7 +28,7 @@ for studynbr = 1:nstudy
         end
         θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
         y = zeros(Float32, length(youts)) # create empty output vector
-        pksim!(y, θ, infusionrate, bolusdose, h, youts)
+        pk3sim!(y, θ, infusionrate, bolusdose, h, youts)
     end
 end
 
@@ -61,13 +50,13 @@ function runsim()
             θ, infusionrate, bolusdose, time, h, youts = getpatientdata(id, study_df) # get patient data
             yset = Set(youts)
             y = zeros(Float32, length(youts)) # create empty output vector
-            bm = @benchmark pksim!($y, $θ, $infusionrate, $bolusdose, $h, $yset, order = 3) samples = 10 evals = 10 gctrial = false
+            bm = @benchmark pk3sim!($y, $θ, $infusionrate, $bolusdose, $h, $yset) samples = 10 evals = 10 gctrial = false
             benchtime += median(bm.times) # median simulation time
         end
     end
     benchtime
 end
 
-benchtime = runsim() # 1.6304 e6 nanoseconds = 1.630 ms (for julia 1.8)
+benchtime = runsim() # 1.5833 e6 nanoseconds = 1.5833 ms (for julia 1.8.2)
 
 
