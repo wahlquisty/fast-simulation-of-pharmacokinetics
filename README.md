@@ -11,7 +11,7 @@ In Julia:
 `eleveld_pksimAdBd.jl` simulates the data set by computing the result directly from $x(k+1) = \Phi x + \Gamma u$.
 
 In Matlab:
-`pksim_eleveld.m` simulates the dataset using `lsim'.
+`pksim_eleveld.m` simulates the dataset using `lsim`.
 
 
 [1] Eleveld, D.J., Colin, P., Absalom, A.R., Struys, M.M.R.F., 2018. Pharmacokinetic–pharmacodynamic model for propofol for broad application in anaesthesia and sedation. British Journal of Anaesthesia 120, 942–959. https://doi.org/10.1016/j.bja.2018.01.018
