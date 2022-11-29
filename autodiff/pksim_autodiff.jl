@@ -13,19 +13,19 @@ include("../expm.jl")
 end
 
 # Simulate with closure
-function simulate(θ, infusionrate, bolusdose, h, youts, order)
+function simulate(θ, u, v, hs, youts)
     function simulate_inner(θ::Array{T}) where {T<:Real}
-        model = PK(θ, order)
+        V1inv, λ, λinv, R = PK3(θ)
         j = 1 # counter to keep track of next free spot in y
         x = @SVector zeros(eltype(u), 3) # initial state
         y = zeros(T,length(youts))
         for i in eachindex(u, hs, v)
             if i in youts # if we want to compute output
-                x, yi = @inbounds updatestateoutput(x, hs[i], model.V1inv, model.λ, model.λinv, model.R, u[i], v[i]) # update state and compute output
+                x, yi = @inbounds updatestateoutput(x, hs[i], V1inv, λ, λinv, R, u[i], v[i]) # update state and compute output
                 y[j] = yi
                 j += 1
             else
-                x = @inbounds updatestate(x, hs[i], model.λ, model.λinv, u[i], v[i]) # update state
+                x = @inbounds updatestate(x, hs[i], λ, λinv, u[i], v[i]) # update state
             end
         end
         return y
@@ -79,7 +79,7 @@ youts = unique(sort(Int32.(floor.(rand(10,) * 10) .+ 1))) # observation indices
 
 
 # jacobian for new simulation
-simulate_inner = simulate(θ, u, v, hs, youts,3)
+simulate_inner = simulate(θ, u, v, hs, youts)
 simulate_inner(θ)
 ForwardDiff.jacobian(simulate_inner, θ) # works! (without SLEEFPirates)
 

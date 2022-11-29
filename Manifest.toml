@@ -349,8 +349,8 @@ uuid = "29a986be-02c6-4525-aec4-84b980013641"
 version = "1.2.7"
 
 [[deps.FastPKSim]]
-deps = ["LinearAlgebra", "SLEEFPirates", "StaticArrays"]
-git-tree-sha1 = "ec6f1c9f9db5d1fa62c8ed6d50c3cecba889681f"
+deps = ["ControlSystemsBase", "LinearAlgebra", "SLEEFPirates", "StaticArrays"]
+git-tree-sha1 = "6f0969401ab36d3647956bfc9e5cc868e716acfd"
 repo-rev = "main"
 repo-url = "https://github.com/wahlquisty/FastPKSim.jl"
 uuid = "b0ae6185-9f73-47b1-8c06-57e18f526c0d"
