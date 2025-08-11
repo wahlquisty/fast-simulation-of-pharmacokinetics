@@ -2,6 +2,7 @@
 # Use callbacks for change of infusion rates and bolus doses
 
 using Pkg
+cd(@__DIR__)
 Pkg.activate("..")
 
 using CSV, DataFrames, DifferentialEquations, LinearAlgebra, StaticArrays
@@ -108,7 +109,7 @@ end
 
 ## Simulate all patients
 nstudy = 30 # nbr of studies
-for studynbr = 1:nstudy
+@time for studynbr = 1:nstudy
     study_df, firstid, lastid = getstudydata(studynbr) # get dataframe for this study
     for id = firstid:lastid
         if id in [893, 897] # no measurements exists for these patients
